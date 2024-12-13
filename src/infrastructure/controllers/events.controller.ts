@@ -7,6 +7,7 @@ import { ClubUpdatedEvent } from '../../domain/events/club-updated.event';
 import { CourtUpdatedEvent } from '../../domain/events/court-updated.event';
 import { SlotBookedEvent } from '../../domain/events/slot-booked.event';
 import { SlotAvailableEvent } from '../../domain/events/slot-cancelled.event';
+import { RedisClient } from '../redis/redis.client';
 
 const SlotSchema = z.object({
   price: z.number(),
@@ -43,7 +44,7 @@ export type ExternalEventDTO = z.infer<typeof ExternalEventSchema>;
 
 @Controller('events')
 export class EventsController {
-  constructor(private eventBus: EventBus) {}
+  constructor(private eventBus: EventBus, private redis: RedisClient) {}
 
   @Post()
   @UseZodGuard('body', ExternalEventSchema)

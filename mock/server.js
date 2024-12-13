@@ -105,7 +105,7 @@ fastify.get(
   },
   async (request, reply) => {
     const court = data.getCourt(request.params.clubId, request.params.courtId);
-    if (!court) {
+    if (!court.length) {
       return reply.code(404).send();
     }
     return omit('available')(court);

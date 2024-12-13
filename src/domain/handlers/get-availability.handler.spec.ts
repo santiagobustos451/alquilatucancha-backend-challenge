@@ -1,59 +1,90 @@
-import * as moment from 'moment';
+import { Test, TestingModule } from '@nestjs/testing';
 
-import { AlquilaTuCanchaClient } from '../../domain/ports/aquila-tu-cancha.client';
+import { AlquilaTuCanchaCacheService } from '../cache/alquila-tu-cancha-cache.service';
 import { GetAvailabilityQuery } from '../commands/get-availaiblity.query';
-import { Club } from '../model/club';
-import { Court } from '../model/court';
-import { Slot } from '../model/slot';
-import { GetAvailabilityHandler } from './get-availability.handler';
+import { GetAvailabilityHandler } from '../handlers/get-availability.handler';
+
+const mockAlquilaTuCanchaCacheService = {
+  getClubs: jest.fn(),
+  getCourts: jest.fn(),
+  getAvailableSlots: jest.fn(),
+};
 
 describe('GetAvailabilityHandler', () => {
   let handler: GetAvailabilityHandler;
-  let client: FakeAlquilaTuCanchaClient;
+  let service: AlquilaTuCanchaCacheService;
 
-  beforeEach(() => {
-    client = new FakeAlquilaTuCanchaClient();
-    handler = new GetAvailabilityHandler(client);
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        GetAvailabilityHandler,
+        {
+          provide: AlquilaTuCanchaCacheService,
+          useValue: mockAlquilaTuCanchaCacheService,
+        },
+      ],
+    }).compile();
+
+    handler = module.get<GetAvailabilityHandler>(GetAvailabilityHandler);
+    service = module.get<AlquilaTuCanchaCacheService>(
+      AlquilaTuCanchaCacheService,
+    );
   });
 
-  it('returns the availability', async () => {
-    client.clubs = {
-      '123': [{ id: 1 }],
-    };
-    client.courts = {
-      '1': [{ id: 1 }],
-    };
-    client.slots = {
-      '1_1_2022-12-05': [],
-    };
-    const placeId = '123';
-    const date = moment('2022-12-05').toDate();
-
-    const response = await handler.execute(
-      new GetAvailabilityQuery(placeId, date),
+  it('should return clubs with availability', async () => {
+    // Datos de prueba
+    const query = new GetAvailabilityQuery(
+      'some-place-id',
+      new Date('2024-12-13'),
     );
 
-    expect(response).toEqual([{ id: 1, courts: [{ id: 1, available: [] }] }]);
+    const mockClubs = [{ id: 'club1' }, { id: 'club2' }];
+    const mockCourts = [{ id: 'court1' }, { id: 'court2' }];
+    const mockSlots = [{ slot: '9:00 AM' }, { slot: '10:00 AM' }];
+
+    mockAlquilaTuCanchaCacheService.getClubs.mockResolvedValue(mockClubs);
+    mockAlquilaTuCanchaCacheService.getCourts.mockResolvedValue(mockCourts);
+    mockAlquilaTuCanchaCacheService.getAvailableSlots.mockResolvedValue(
+      mockSlots,
+    );
+
+    const result = await handler.execute(query);
+
+    expect(result).toEqual([
+      {
+        id: 'club1',
+        courts: [
+          { id: 'court1', available: mockSlots },
+          { id: 'court2', available: mockSlots },
+        ],
+      },
+      {
+        id: 'club2',
+        courts: [
+          { id: 'court1', available: mockSlots },
+          { id: 'court2', available: mockSlots },
+        ],
+      },
+    ]);
+
+    // Verificar que las funciones del servicio se llamaron correctamente
+    expect(service.getClubs).toHaveBeenCalledWith(query.placeId);
+    expect(service.getCourts).toHaveBeenCalledTimes(2); // Se llama por cada club
+    expect(service.getAvailableSlots).toHaveBeenCalledTimes(4); // Se llama por cada cancha de cada club
+  });
+
+  it('should handle errors gracefully', async () => {
+    const query = new GetAvailabilityQuery(
+      'some-place-id',
+      new Date('2024-12-13'),
+    );
+
+    // Simular que la llamada a getClubs falla
+    mockAlquilaTuCanchaCacheService.getClubs.mockRejectedValue(
+      new Error('Service unavailable'),
+    );
+
+    // Verificar que se maneja el error correctamente
+    await expect(handler.execute(query)).rejects.toThrow('Service unavailable');
   });
 });
-
-class FakeAlquilaTuCanchaClient implements AlquilaTuCanchaClient {
-  clubs: Record<string, Club[]> = {};
-  courts: Record<string, Court[]> = {};
-  slots: Record<string, Slot[]> = {};
-  async getClubs(placeId: string): Promise<Club[]> {
-    return this.clubs[placeId];
-  }
-  async getCourts(clubId: number): Promise<Court[]> {
-    return this.courts[String(clubId)];
-  }
-  async getAvailableSlots(
-    clubId: number,
-    courtId: number,
-    date: Date,
-  ): Promise<Slot[]> {
-    return this.slots[
-      `${clubId}_${courtId}_${moment(date).format('YYYY-MM-DD')}`
-    ];
-  }
-}
