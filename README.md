@@ -16,13 +16,13 @@
 
 Este proyecto implementa un sistema de caching con Redis para mejorar la eficiencia de las consultas en una aplicación que gestiona la disponibilidad de canchas deportivas. Utilizando un enfoque basado en eventos, el sistema actualiza la cache de manera dinámica en respuesta a cambios en los datos de los clubes, canchas y horarios. La integración con Redis permite reducir el tiempo de respuesta de las consultas al evitar la necesidad de realizar llamadas repetitivas a la API, lo que optimiza significativamente el rendimiento de la aplicación.
 
-# Resultados obtenidos
+### Resultados obtenidos
 
 La implementación de Redis como sistema de cache ha tenido un impacto notable en el rendimiento de las consultas. Antes de la implementación de la cache, la respuesta inicial a la búsqueda de clubes, canchas y slots tomaba aproximadamente 18 segundos, debido a la necesidad de hacer llamadas a la API para recuperar los datos.
 
 Con la cache de Redis en funcionamiento, la respuesta de las consultas se ha reducido a un promedio de **22ms**, lo que representa una mejora significativa en la velocidad de la aplicación. Sin embargo, en algunas ocasiones, las consultas pueden tardar un poco más (alrededor de 500ms), principalmente cuando es necesario actualizar la cache de los slots debido a cambios en los datos. Este comportamiento es esperado y no afecta significativamente el rendimiento general, ya que ocurre en casos puntuales y la mayoría de las consultas se benefician de la cache con tiempos de respuesta significativamente más bajos.
 
-# Cómo correr la aplicación
+### Cómo correr la aplicación
 
 El desarrollo se llevó a cabo utilizando docker compose, mediante el cual se creo el contenedor del servidor de redis. Luego de instalar las dependencias, correr el siguiente comando para iniciar los contenedores.
 
@@ -32,7 +32,7 @@ El desarrollo se llevó a cabo utilizando docker compose, mediante el cual se cr
 
 > Probado con [Docker version 26.0.0, build 2ae903e] y [Docker Compose version v2.26.1-desktop.1]
 
-### **Explicación del enfoque implementado**
+## **Explicación del enfoque implementado**
 
 A continuación, se detalla la solución implementada para optimizar el sistema de manejo de datos del proyecto "Alquila Tu Cancha". Se emplearon **Redis** y servicios cacheados para mejorar el rendimiento y reducir la latencia de las operaciones recurrentes, como obtener clubes, canchas o turnos disponibles.
 
