@@ -1,3 +1,17 @@
+# Actualizaciones
+
+### Actualización 1: Precacheo, Optimización del fetching de disponibilidad
+
+- Se identificó una ineficiencia en el proceso de fetching de disponibilidad, ya que las peticiones se realizaban de forma secuencial. Esto fue corregido mediante la paralelización de las solicitudes a la API siempre que fue posible, lo que redujo el tiempo de respuesta inicial de aproximadamente ~18 segundos a ~4.5 segundos.
+
+- Se implementó un servicio de precaching que precarga la información de los clubes y canchas utilizando el endpoint /zones.
+
+> Nota: En un escenario real, se asume que este endpoint devolvería las zonas más populares en lugar de todas las zonas. Sin embargo, con la API mock utilizada, el endpoint solo devuelve 3 zonas, lo que permite precargar toda la información en poco más de 4 segundos.
+
+#### Resultados de la actualización
+
+- Reducción del tiempo de respuesta a ~1s cuando se requiere hacer un fetch a la API mock, y a ~20ms cuando la información está disponible en cache.
+
 # Introducción
 
 Este proyecto implementa un sistema de caching con Redis para mejorar la eficiencia de las consultas en una aplicación que gestiona la disponibilidad de canchas deportivas. Utilizando un enfoque basado en eventos, el sistema actualiza la cache de manera dinámica en respuesta a cambios en los datos de los clubes, canchas y horarios. La integración con Redis permite reducir el tiempo de respuesta de las consultas al evitar la necesidad de realizar llamadas repetitivas a la API, lo que optimiza significativamente el rendimiento de la aplicación.
@@ -105,14 +119,14 @@ Para mantener el cache actualizado, se implementaron handlers que reaccionan a e
 - **Evento**: `SlotAvailableEvent`
 - **Acciones**:
 
-1. Crea o actualiza el cache de un turno disponible (`slots:${clubId}:${courtId}:${YYYY-MM-DD}`) con la información del evento.
+1. Elimina del cache los slots asociados a la cancha en esa fecha determinada (`slots:${clubId}:${courtId}:${YYYY-MM-DD}`).
 
 ##### **`SlotBookedHandler`**
 
 - **Evento**: `SlotBookedEvent`
 - **Acciones**:
 
-1. Elimina la clave del turno reservado en el cache (`slots:${clubId}:${courtId}:${YYYY-MM-DD}`), asegurando que ya no esté disponible.
+1. Elimina del cache los slots asociados a la cancha en esa fecha determinada (`slots:${clubId}:${courtId}:${YYYY-MM-DD}`).
 
 ---
 

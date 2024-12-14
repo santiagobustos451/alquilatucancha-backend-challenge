@@ -1,4 +1,5 @@
 import { Inject, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { EventsHandler, IEventHandler } from '@nestjs/cqrs';
 
 import { RedisClient } from '../../infrastructure/redis/redis.client';
@@ -11,14 +12,18 @@ import {
 @EventsHandler(ClubUpdatedEvent)
 export class ClubUpdatedHandler implements IEventHandler<ClubUpdatedEvent> {
   private readonly logger = new Logger(ClubUpdatedHandler.name);
-
-  DEFAULT_TTL = parseInt(process.env.DEFAULT_TTL || '3600');
+  private readonly DEFAULT_TTL: number;
 
   constructor(
     private readonly redisClient: RedisClient,
     @Inject(ALQUILA_TU_CANCHA_CLIENT)
     private readonly alquilaTuCanchaClient: AlquilaTuCanchaClient,
-  ) {}
+    private readonly configService: ConfigService,
+  ) {
+    this.DEFAULT_TTL = parseInt(
+      this.configService.get<string>('DEFAULT_TTL', '3600'),
+    );
+  }
 
   async handle(event: ClubUpdatedEvent) {
     this.logger.log(
@@ -26,13 +31,13 @@ export class ClubUpdatedHandler implements IEventHandler<ClubUpdatedEvent> {
     );
 
     try {
-      // Borrar el cache relacionado con el club
-      await this.redisClient.delFromCache(`club-${event.clubId}`);
-
       // Obtener los datos actualizados desde el cliente HTTP
       const updatedClub = await this.alquilaTuCanchaClient.getClubById(
         event.clubId,
       );
+
+      // Borrar el cache relacionado con el club
+      await this.redisClient.delFromCache(`club-${event.clubId}`);
 
       // Cachear el club actualizado
       await this.redisClient.setToCache(

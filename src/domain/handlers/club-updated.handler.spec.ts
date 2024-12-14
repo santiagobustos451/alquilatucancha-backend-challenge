@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { RedisClient } from '../../infrastructure/redis/redis.client';
@@ -15,6 +16,15 @@ const mockRedisClient = {
 
 const mockAlquilaTuCanchaClient = {
   getClubById: jest.fn(),
+};
+
+const mockConfigService = {
+  get: jest.fn().mockImplementation((key: string) => {
+    if (key === 'DEFAULT_TTL') {
+      return '3600'; // Valor de TTL simulado (1 hora)
+    }
+    return null;
+  }),
 };
 
 describe('ClubUpdatedHandler', () => {
@@ -34,6 +44,7 @@ describe('ClubUpdatedHandler', () => {
           provide: ALQUILA_TU_CANCHA_CLIENT,
           useValue: mockAlquilaTuCanchaClient,
         },
+        { provide: ConfigService, useValue: mockConfigService },
         Logger,
       ],
     }).compile();
@@ -43,6 +54,7 @@ describe('ClubUpdatedHandler', () => {
 
   it('should update the club in the cache and clear related slots', async () => {
     const mockUpdatedClub = { id: 1, name: 'Updated Club' }; // Club simulado
+    const ttl = parseInt(mockConfigService.get('DEFAULT_TTL'), 10); // Obtenemos el TTL
 
     // Simula la respuesta de la API
     mockAlquilaTuCanchaClient.getClubById.mockResolvedValue(mockUpdatedClub);
@@ -61,7 +73,7 @@ describe('ClubUpdatedHandler', () => {
     expect(mockRedisClient.setToCache).toHaveBeenCalledWith(
       'club-1',
       mockUpdatedClub,
-      300,
+      ttl, // Verificamos que use el TTL obtenido del mock
     );
     expect(mockRedisClient.keys).toHaveBeenCalledWith('slots:1:*');
     expect(mockRedisClient.delFromCache).toHaveBeenCalledWith(

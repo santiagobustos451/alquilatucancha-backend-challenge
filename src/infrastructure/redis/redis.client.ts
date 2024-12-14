@@ -1,5 +1,6 @@
 /* eslint-disable prettier/prettier */
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
 @Injectable()
@@ -7,10 +8,14 @@ export class RedisClient {
   private redis: Redis;
   private readonly logger = new Logger(RedisClient.name);
 
-  constructor() {
-    // Configura la conexión a Redis
-    const redisHost: string = process.env.REDIS_HOST || 'redis'; // Usa 'redis' si no se establece otra cosa
-    const redisPort: number = parseInt(process.env.REDIS_PORT || '6379'); // Puerto por defecto
+  constructor(private readonly configService: ConfigService) {
+    const redisHost: string = this.configService.get<string>(
+      'REDIS_HOST',
+      'redis',
+    ); // Usa 'redis' como valor por defecto
+    const redisPort: number = parseInt(
+      this.configService.get<string>('REDIS_PORT', '6379'),
+    ); // Puerto por defecto
 
     this.redis = new Redis({
       host: redisHost,
@@ -46,7 +51,7 @@ export class RedisClient {
   // Método para almacenar datos en el caché
   async setToCache(key: string, data: any, expiration = 10): Promise<void> {
     try {
-      await this.redis.setex(key, expiration, JSON.stringify(data)); // Expiro en 1 hora por defecto
+      await this.redis.setex(key, expiration, JSON.stringify(data)); // Expira en 1 hora por defecto
       this.logger.log(`Datos almacenados en el caché con la clave: ${key}`);
     } catch (error) {
       this.logger.error('Error al almacenar datos en el caché:', error);

@@ -24,11 +24,16 @@ export class CourtUpdatedHandler implements IEventHandler<CourtUpdatedEvent> {
     );
 
     try {
+      // Obtener los datos actualizados desde el cliente HTTP, se cachean
+      const updatedCourt = await this.alquilaTuCanchaClient.getCourts(
+        event.clubId,
+      );
+
       // Borrar el cache relacionado con el club
       await this.redisClient.delFromCache(`courts-${event.clubId}`);
 
-      // Obtener los datos actualizados desde el cliente HTTP, se cachean
-      await this.alquilaTuCanchaClient.getCourts(event.clubId);
+      // Cachear la nueva informacion
+      await this.redisClient.setToCache(`courts-${event.clubId}`, updatedCourt);
 
       this.logger.log(
         `Las canchas del club con ID ${event.clubId} han sido actualizadas en el cache.`,

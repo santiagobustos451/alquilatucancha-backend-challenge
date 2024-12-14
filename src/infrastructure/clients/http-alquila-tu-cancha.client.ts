@@ -6,6 +6,7 @@ import * as moment from 'moment';
 import { Club } from '../../domain/model/club';
 import { Court } from '../../domain/model/court';
 import { Slot } from '../../domain/model/slot';
+import { Zone } from '../../domain/model/zone';
 import { AlquilaTuCanchaClient } from '../../domain/ports/aquila-tu-cancha.client';
 import { RedisClient } from '../redis/redis.client';
 
@@ -54,6 +55,12 @@ export class HTTPAlquilaTuCanchaClient implements AlquilaTuCanchaClient {
   async getClubById(clubId: number): Promise<Club> {
     return this.httpService.axiosRef
       .get(`/clubs/${clubId}`, { baseURL: this.base_url })
+      .then((res) => res.data);
+  }
+
+  async getZones(): Promise<Zone[]> {
+    return this.httpService.axiosRef
+      .get(`/zones`, { baseURL: this.base_url })
       .then((res) => res.data);
   }
 }

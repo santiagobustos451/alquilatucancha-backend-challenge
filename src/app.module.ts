@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { CqrsModule } from '@nestjs/cqrs';
 
 import { AlquilaTuCanchaCacheService } from './domain/cache/alquila-tu-cancha-cache.service';
+import { PrecacheService } from './domain/cache/alquila-tu-cancha-precache.service';
 import { ClubUpdatedHandler } from './domain/handlers/club-updated.handler';
 import { CourtUpdatedHandler } from './domain/handlers/court-updated.handler';
 import { GetAvailabilityHandler } from './domain/handlers/get-availability.handler';
@@ -29,6 +30,7 @@ import { RedisModule } from './infrastructure/redis/redis.module';
     CourtUpdatedHandler,
     SlotAvailableHandler,
     SlotBookedHandler,
+    PrecacheService,
   ],
 })
 export class AppModule {}

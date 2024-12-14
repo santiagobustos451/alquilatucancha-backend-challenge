@@ -1,3 +1,4 @@
+import { ConfigModule } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { RedisClient } from '../../infrastructure/redis/redis.client';
@@ -8,7 +9,6 @@ import {
   AlquilaTuCanchaClient,
 } from '../ports/aquila-tu-cancha.client';
 
-// Mock de RedisClient y AlquilaTuCanchaClient
 const mockRedisClient = {
   getFromCache: jest.fn(),
   setToCache: jest.fn(),
@@ -23,6 +23,11 @@ describe('AlquilaTuCanchaCacheService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({
+          isGlobal: true, // ConfigModule se usará en toda la aplicación
+        }),
+      ],
       providers: [
         AlquilaTuCanchaCacheService,
         { provide: RedisClient, useValue: mockRedisClient },
@@ -77,7 +82,7 @@ describe('AlquilaTuCanchaCacheService', () => {
           _priority: 1,
         },
       ];
-      mockRedisClient.getFromCache.mockResolvedValue(null); // Simulamos que no hay en caché
+      mockRedisClient.getFromCache.mockResolvedValue(null);
       mockAlquilaTuCanchaClient.getAvailableSlots.mockResolvedValue(mockSlots);
 
       const result = await service.getAvailableSlots(

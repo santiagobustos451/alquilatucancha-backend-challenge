@@ -15,31 +15,31 @@ export class GetAvailabilityHandler
   ) {}
 
   async execute(query: GetAvailabilityQuery): Promise<ClubWithAvailability[]> {
-    const clubs_with_availability: ClubWithAvailability[] = [];
-
     const clubs = await this.alquilaTuCanchaCacheService.getClubs(
       query.placeId,
     );
 
-    for (const club of clubs) {
-      const courts = await this.alquilaTuCanchaCacheService.getCourts(club.id);
-      const courts_with_availability: ClubWithAvailability['courts'] = [];
-      for (const court of courts) {
-        const slots = await this.alquilaTuCanchaCacheService.getAvailableSlots(
+    const clubs_with_availability = await Promise.all(
+      clubs.map(async (club) => {
+        const courts = await this.alquilaTuCanchaCacheService.getCourts(
           club.id,
-          court.id,
-          query.date,
         );
-        courts_with_availability.push({
-          ...court,
-          available: slots,
-        });
-      }
-      clubs_with_availability.push({
-        ...club,
-        courts: courts_with_availability,
-      });
-    }
+        const courts_with_availability = await Promise.all(
+          courts.map(async (court) => {
+            const slots =
+              await this.alquilaTuCanchaCacheService.getAvailableSlots(
+                club.id,
+                court.id,
+                query.date,
+              );
+            return { ...court, available: slots };
+          }),
+        );
+
+        return { ...club, courts: courts_with_availability };
+      }),
+    );
+
     return clubs_with_availability;
   }
 }
